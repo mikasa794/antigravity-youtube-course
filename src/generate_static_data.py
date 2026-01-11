@@ -82,6 +82,93 @@ def main():
         full_db[key] = records
         print(f"   ✅ Got {len(records)} records for {key}")
 
+    # Post-processing: Download images
+    print("🖼️  Processing Images...")
+    
+    # helper to download
+    def download_image(url, folder, filename):
+        if not url or not url.startswith("http"): return None
+        try:
+            # Create folder
+            save_dir = os.path.join("web", "public", "images", folder)
+            os.makedirs(save_dir, exist_ok=True)
+            
+            # Determine extension
+            ext = ".jpg" 
+            if ".png" in url: ext = ".png"
+            elif ".webp" in url: ext = ".webp"
+            
+            local_filename = f"{filename}{ext}"
+            local_path = os.path.join(save_dir, local_filename)
+            public_path = f"/images/{folder}/{local_filename}"
+            
+            # Skip if exists (cache) to speed up
+            if os.path.exists(local_path):
+                return public_path
+
+            # Download
+            # Feishu attachment headers
+            response = requests.get(url, headers={"Authorization": f"Bearer {token}"}, stream=True)
+            if response.status_code == 200:
+                with open(local_path, 'wb') as f:
+                    for chunk in response.iter_content(1024):
+                        f.write(chunk)
+                return public_path
+            else:
+                # Try without auth (public urls)
+                response = requests.get(url, stream=True)
+                if response.status_code == 200:
+                    with open(local_path, 'wb') as f:
+                        for chunk in response.iter_content(1024):
+                            f.write(chunk)
+                    return public_path
+        except Exception as e:
+            print(f"   ⚠️ Failed to download {url}: {e}")
+            return None
+        return None
+
+    # 1. Articles (Field: Cover [Attachment])
+    for item in full_db.get("articles", []):
+        f = item.get("fields", {})
+        covers = f.get("Cover")
+        if covers and isinstance(covers, list) and len(covers) > 0:
+            original_url = covers[0].get("url")
+            record_id = item.get("record_id")
+            local_url = download_image(original_url, "articles", record_id)
+            if local_url:
+                covers[0]["url"] = local_url
+                print(f"   Downloaded Article Cover: {local_url}")
+
+    # 2. Lingo (Field: Cover [Attachment])
+    for item in full_db.get("lingo", []):
+        f = item.get("fields", {})
+        covers = f.get("Cover")
+        if covers and isinstance(covers, list) and len(covers) > 0:
+            original_url = covers[0].get("url")
+            record_id = item.get("record_id")
+            local_url = download_image(original_url, "lingo", record_id)
+            if local_url:
+                covers[0]["url"] = local_url
+                print(f"   Downloaded Lingo Cover: {local_url}")
+
+    # 3. Courses (Field: Cover Image URL [Text])
+    for item in full_db.get("courses", []):
+        f = item.get("fields", {})
+        cover_url = f.get("Cover Image URL")
+        # Handle string or Link object
+        url_to_download = None
+        if isinstance(cover_url, str):
+            url_to_download = cover_url
+        elif isinstance(cover_url, dict) and "link" in cover_url:
+            url_to_download = cover_url["link"]
+            
+        if url_to_download:
+            record_id = item.get("record_id")
+            local_url = download_image(url_to_download, "courses", record_id)
+            if local_url:
+                f["Cover Image URL"] = local_url # Replace with string path
+                print(f"   Downloaded Course Cover: {local_url}")
+
     # Output path
     output_path = os.path.join("web", "data", "static_db.json")
     
