@@ -364,6 +364,7 @@ export interface LingoClip {
     title: string;
     videoUrl: string;
     cover?: string;
+    series?: string;
     transcript: string; // JSON string of subtitle array
     tags: string[];
     date: string;
@@ -414,6 +415,7 @@ export async function fetchLingoClips(): Promise<LingoClip[]> {
                 title: f['Title'] || 'Untitled Clip',
                 videoUrl: f['Video URL'] || f['URL'] || '',
                 cover: getCover(f['Cover']),
+                series: f['Series'] || '',
                 transcript: f['Transcript (JSON)'] || '[]',
                 tags: f['Tags'] ? (Array.isArray(f['Tags']) ? f['Tags'] : [f['Tags']]) : [],
                 date: f['Date'] ? new Date(f['Date']).toISOString() : new Date().toISOString(),
