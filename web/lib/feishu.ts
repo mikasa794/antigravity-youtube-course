@@ -221,8 +221,8 @@ export interface Article {
     platform: string;
     url: string;
     cover?: string;
-    author?: string;
-    goldenQuote?: string;
+    author: string;
+    goldenQuote: string;
     tags: string[];
     date: string;
     aiNotes?: string;
