@@ -202,6 +202,9 @@ export async function getTenantAccessToken(): Promise<string> {
 
         const data: TenantAccessTokenResponse = await response.json();
 
+        // DEBUG
+        console.log(`[Feishu Auth] AppID: ${APP_ID?.slice(0, 5)}..., Status: ${response.status}, Code: ${data.code}`);
+
         if (data.code !== 0) {
             console.error('Failed to get tenant access token:', data);
             return '';
