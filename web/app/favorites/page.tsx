@@ -10,3 +10,5 @@ export default async function FavoritesPage() {
         </main>
     );
 }
+
+export const dynamic = 'force-dynamic';
