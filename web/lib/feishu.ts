@@ -9,6 +9,8 @@ const BITABLE_APP_TOKEN = process.env.FEISHU_BITABLE_APP_TOKEN || '';
 const ARTICLES_TABLE_ID = process.env.FEISHU_BITABLE_TABLE_ID || '';
 /* Lingo Table */
 const VOCAB_TABLE_ID = process.env.FEISHU_VOCAB_TABLE_ID || '';
+/* Lingo Videos Table */
+const LINGO_TABLE_ID = process.env.FEISHU_LINGO_TABLE_ID || '';
 /* Courses Table - Optional */
 const COURSES_TABLE_ID = process.env.FEISHU_COURSES_TABLE_ID || '';
 
@@ -95,7 +97,7 @@ export async function fetchArticles(): Promise<Article[]> {
             return [];
         }
 
-        const items = data.data.items.map((item: any) => {
+        return data.data.items.map((item: any) => {
             const f = item.fields;
 
             const getCoverParams = (attachmentField: any) => {
@@ -119,12 +121,15 @@ export async function fetchArticles(): Promise<Article[]> {
             };
         });
 
-        return items;
-
     } catch (error) {
         console.error('Error fetching articles:', error);
         return [];
     }
+}
+
+export async function fetchArticleById(id: string): Promise<Article | null> {
+    const articles = await fetchArticles();
+    return articles.find(a => a.id === id) || null;
 }
 
 export interface VocabCard {
@@ -177,6 +182,74 @@ export async function fetchVocabCards(): Promise<VocabCard[]> {
 
     } catch (error) {
         console.error('Error fetching vocab cards:', error);
+        return [];
+    }
+}
+
+export interface LingoClip {
+    id: string;
+    title: string;
+    videoUrl: string;
+    coverUrl?: string;
+    transcript: string; // JSON string of subtitle array
+    tags: string[];
+    date: string;
+    status: string;
+}
+
+export async function fetchLingoClips(): Promise<LingoClip[]> {
+    if (!BITABLE_APP_TOKEN || !LINGO_TABLE_ID) {
+        console.warn('FEISHU_BITABLE_APP_TOKEN or FEISHU_LINGO_TABLE_ID is missing');
+        return [];
+    }
+
+    const token = await getTenantAccessToken();
+    if (!token) return [];
+
+    const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${BITABLE_APP_TOKEN}/tables/${LINGO_TABLE_ID}/records`;
+
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+            next: { revalidate: 60 }
+        });
+
+        const data = await response.json();
+
+        if (data.code !== 0) {
+            console.error('Failed to fetch lingo clips:', data);
+            return [];
+        }
+
+        if (!data.data || !data.data.items) {
+            return [];
+        }
+
+        return data.data.items.map((item: any) => {
+            const f = item.fields;
+
+            // Helper for Cover
+            const getCover = (field: any) => {
+                if (field && Array.isArray(field) && field.length > 0) return field[0].url;
+                return undefined;
+            };
+
+            return {
+                id: item.record_id,
+                title: f['Title'] || 'Untitled Clip',
+                videoUrl: f['Video URL'] || f['URL'] || '',
+                coverUrl: getCover(f['Cover']),
+                transcript: f['Transcript (JSON)'] || '[]',
+                tags: f['Tags'] ? (Array.isArray(f['Tags']) ? f['Tags'] : [f['Tags']]) : [],
+                date: f['Date'] ? new Date(f['Date']).toISOString() : new Date().toISOString(),
+                status: f['Status'] || 'Done',
+            };
+        });
+
+    } catch (error) {
+        console.error('Error fetching lingo clips:', error);
         return [];
     }
 }
