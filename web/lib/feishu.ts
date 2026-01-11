@@ -239,6 +239,15 @@ export async function fetchVocabCards(): Promise<VocabCard[]> {
     }
 }
 
+export async function getVocabList() {
+    try {
+        const items = await fetchVocabCards();
+        return { success: true, items };
+    } catch (e) {
+        return { success: false, error: 'Failed to fetch' };
+    }
+}
+
 export interface LingoClip {
     id: string;
     title: string;
