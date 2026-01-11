@@ -37,7 +37,28 @@ export interface Lesson {
     courseId: string;
 }
 
+// --- STATIC DATA FALLBACK (Bypass Vercel/Feishu IP Issues) ---
+import staticData from '@/data/static_db.json';
+
+// Helper to simulate DB Delay
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
 export async function fetchCourses(): Promise<Course[]> {
+    // 1. Try Static Data First (Fastest, Most Reliable for Demo)
+    if (staticData && staticData.courses) {
+        // await delay(100); // Optional: simulate network
+        return (staticData.courses as any[]).map((item: any) => {
+            const f = item.fields;
+            return {
+                id: item.record_id,
+                title: f['Title'] || 'Untitled Course',
+                description: f['Description'] || '',
+                cover: f['Cover Image URL'] || '',
+                status: f['Status'] || 'Draft',
+            };
+        });
+    }
+
     if (!BITABLE_APP_TOKEN || !COURSES_TABLE_ID) return [];
 
     const token = await getTenantAccessToken();
@@ -71,21 +92,32 @@ export async function fetchCourses(): Promise<Course[]> {
 }
 
 export async function fetchLessons(courseId?: string): Promise<Lesson[]> {
+    // 1. Static Fallback
+    if (staticData && staticData.lessons) {
+        let lessons = (staticData.lessons as any[]).map((item: any) => {
+            const f = item.fields;
+            return {
+                id: item.record_id,
+                title: f['Title'] || 'Untitled Lesson',
+                moduleTitle: f['Module Title'] || '',
+                videoUrl: f['Video URL']?.link || f['Video URL'] || '',
+                duration: f['Duration'] || '',
+                transcript: f['Transcript'] || '',
+                courseId: f['Course ID'] || '',
+            };
+        });
+        if (courseId) {
+            lessons = lessons.filter(l => l.courseId === courseId);
+        }
+        return lessons;
+    }
+
     if (!BITABLE_APP_TOKEN || !LESSONS_TABLE_ID) return [];
 
     const token = await getTenantAccessToken();
     if (!token) return [];
 
-    // Filter by Course ID if provided? 
-    // For simplicity, fetch all and filter in memory, or use filter params if many.
-    // Given low volume, fetch all is fine for static build.
-
-    // Better: Filter string
     let url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${BITABLE_APP_TOKEN}/tables/${LESSONS_TABLE_ID}/records`;
-    if (courseId) {
-        // Simple filter might be complex with API, let's fetch all and filter in JS for safety/speed with small data
-        // Or construct filter view? 
-    }
 
     try {
         const response = await fetch(url, {
@@ -121,7 +153,7 @@ export async function fetchLessons(courseId?: string): Promise<Lesson[]> {
 }
 
 
-// --- Save Vocab ---
+// --- Save Vocab (Still needs API, but less critical for initial view) ---
 export async function saveVocab(data: {
     word: string;
     meaning: string;
@@ -230,6 +262,34 @@ export interface Article {
 }
 
 export async function fetchArticles(): Promise<Article[]> {
+    // 1. Static Fallback
+    if (staticData && staticData.articles) {
+        return (staticData.articles as any[]).map((item: any) => {
+            const f = item.fields;
+            const getCoverParams = (attachmentField: any) => {
+                if (attachmentField && Array.isArray(attachmentField) && attachmentField.length > 0) {
+                    return attachmentField[0].url;
+                }
+                return undefined;
+            };
+
+            return {
+                id: item.record_id,
+                title: f['Title'] || 'Untitled',
+                summary: f['Summary'] || '',
+                platform: f['Platform'] || 'Unknown',
+                url: f['URL'] && f['URL'].link ? f['URL'].link : (f['URL'] || '#'),
+                cover: getCoverParams(f['Cover']),
+                author: f['Author'] || 'Antigravity AI',
+                goldenQuote: f['Quote'] || f['Golden Quote'] || '',
+                tags: f['Tags'] ? (Array.isArray(f['Tags']) ? f['Tags'] : [f['Tags']]) : [],
+                date: f['Date'] ? new Date(f['Date']).toISOString() : new Date().toISOString(),
+                aiNotes: f['AI Notes'] || '',
+                status: f['Status'] || 'Done',
+            };
+        });
+    }
+
     if (!BITABLE_APP_TOKEN || !ARTICLES_TABLE_ID) {
         console.warn('FEISHU_BITABLE_APP_TOKEN or FEISHU_BITABLE_TABLE_ID is missing');
         return [];
@@ -306,6 +366,18 @@ export interface VocabCard {
 }
 
 export async function fetchVocabCards(): Promise<VocabCard[]> {
+    // 1. Static Fallback
+    if (staticData && staticData.vocab) {
+        return (staticData.vocab as any[]).map((item: any) => ({
+            id: item.record_id,
+            word: item.fields['Word'] || 'Unknown',
+            context: item.fields['Context'] || '',
+            translation: item.fields['Translation'] || '',
+            videoTitle: item.fields['Video Title'] || '',
+            timestamp: item.fields['Timestamp'] || '',
+        }));
+    }
+
     if (!BITABLE_APP_TOKEN || !VOCAB_TABLE_ID) {
         console.warn('FEISHU_BITABLE_APP_TOKEN or FEISHU_VOCAB_TABLE_ID is missing');
         return [];
@@ -374,6 +446,33 @@ export interface LingoClip {
 }
 
 export async function fetchLingoClips(): Promise<LingoClip[]> {
+    // 1. Static Fallback
+    if (staticData && staticData.lingo) {
+        return (staticData.lingo as any[]).map((item: any) => {
+            const f = item.fields;
+
+            // Helper for Cover
+            const getCover = (field: any) => {
+                if (field && Array.isArray(field) && field.length > 0) return field[0].url;
+                return undefined;
+            };
+
+            return {
+                id: item.record_id,
+                title: f['Title'] || 'Untitled Clip',
+                videoUrl: f['Video URL'] || f['URL'] || '',
+                cover: getCover(f['Cover']),
+                series: f['Series'] || 'General',
+                targetLang: f['Target Language'] || 'EN',
+                difficulty: f['Difficulty'] || 'Medium',
+                transcript: f['Transcript (JSON)'] || '[]',
+                tags: f['Tags'] ? (Array.isArray(f['Tags']) ? f['Tags'] : [f['Tags']]) : [],
+                date: f['Date'] ? new Date(f['Date']).toISOString() : new Date().toISOString(),
+                status: f['Status'] || 'Done',
+            };
+        });
+    }
+
     if (!BITABLE_APP_TOKEN || !LINGO_TABLE_ID) {
         console.warn('FEISHU_BITABLE_APP_TOKEN or FEISHU_LINGO_TABLE_ID is missing');
         return [];
