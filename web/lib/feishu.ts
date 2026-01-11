@@ -11,8 +11,115 @@ const ARTICLES_TABLE_ID = process.env.FEISHU_BITABLE_TABLE_ID || '';
 const VOCAB_TABLE_ID = process.env.FEISHU_VOCAB_TABLE_ID || '';
 /* Lingo Videos Table */
 const LINGO_TABLE_ID = process.env.FEISHU_LINGO_TABLE_ID || '';
+
 /* Courses Table - Optional */
 const COURSES_TABLE_ID = process.env.FEISHU_COURSES_TABLE_ID || '';
+/* Lessons Table */
+const LESSONS_TABLE_ID = process.env.FEISHU_LESSONS_TABLE_ID || '';
+
+// ... (Existing Imports/Functions)
+
+export interface Course {
+    id: string;
+    title: string;
+    description: string;
+    cover: string;
+    status: string;
+}
+
+export interface Lesson {
+    id: string;
+    title: string;
+    moduleTitle: string;
+    videoUrl: string;
+    duration: string;
+    transcript: string;
+    courseId: string;
+}
+
+export async function fetchCourses(): Promise<Course[]> {
+    if (!BITABLE_APP_TOKEN || !COURSES_TABLE_ID) return [];
+
+    const token = await getTenantAccessToken();
+    if (!token) return [];
+
+    const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${BITABLE_APP_TOKEN}/tables/${COURSES_TABLE_ID}/records`;
+
+    try {
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            next: { revalidate: 60 }
+        });
+
+        const data = await response.json();
+        if (data.code !== 0) return [];
+
+        return (data.data?.items || []).map((item: any) => {
+            const f = item.fields;
+            return {
+                id: item.record_id,
+                title: f['Title'] || 'Untitled Course',
+                description: f['Description'] || '',
+                cover: f['Cover Image URL'] || '',
+                status: f['Status'] || 'Draft',
+            };
+        });
+    } catch (e) {
+        console.error('Error fetching courses:', e);
+        return [];
+    }
+}
+
+export async function fetchLessons(courseId?: string): Promise<Lesson[]> {
+    if (!BITABLE_APP_TOKEN || !LESSONS_TABLE_ID) return [];
+
+    const token = await getTenantAccessToken();
+    if (!token) return [];
+
+    // Filter by Course ID if provided? 
+    // For simplicity, fetch all and filter in memory, or use filter params if many.
+    // Given low volume, fetch all is fine for static build.
+
+    // Better: Filter string
+    let url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${BITABLE_APP_TOKEN}/tables/${LESSONS_TABLE_ID}/records`;
+    if (courseId) {
+        // Simple filter might be complex with API, let's fetch all and filter in JS for safety/speed with small data
+        // Or construct filter view? 
+    }
+
+    try {
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            next: { revalidate: 60 }
+        });
+
+        const data = await response.json();
+        if (data.code !== 0) return [];
+
+        let lessons = (data.data?.items || []).map((item: any) => {
+            const f = item.fields;
+            return {
+                id: item.record_id,
+                title: f['Title'] || 'Untitled Lesson',
+                moduleTitle: f['Module Title'] || '',
+                videoUrl: f['Video URL']?.link || f['Video URL'] || '',
+                duration: f['Duration'] || '',
+                transcript: f['Transcript'] || '',
+                courseId: f['Course ID'] || '',
+            };
+        });
+
+        if (courseId) {
+            lessons = lessons.filter((l: Lesson) => l.courseId === courseId);
+        }
+
+        return lessons;
+    } catch (e) {
+        console.error('Error fetching lessons:', e);
+        return [];
+    }
+}
+
 
 // --- Save Vocab ---
 export async function saveVocab(data: {
