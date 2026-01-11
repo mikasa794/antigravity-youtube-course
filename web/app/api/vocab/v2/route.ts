@@ -46,12 +46,13 @@ export async function POST(req: NextRequest) {
         if (data.code === 0) {
             return NextResponse.json({ success: true, id: data.data.record.record_id });
         } else {
-            console.error('‚ùå [API V2] Feishu Error:', data);
+            console.error('‚ù?[API V2] Feishu Error:', data);
             return NextResponse.json({ error: `Feishu Error: ${data.msg}` }, { status: 500 });
         }
 
     } catch (e: any) {
-        console.error('‚ùå [API V2] Exception:', e);
+        console.error('‚ù?[API V2] Exception:', e);
         return NextResponse.json({ error: e.message || 'Internal Server Error' }, { status: 500 });
     }
 }
+

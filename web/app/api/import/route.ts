@@ -27,7 +27,7 @@ export async function POST(req: Request) {
         // Execute
         const { stdout, stderr } = await execAsync(command);
 
-        console.log('✅ Import Output:', stdout);
+        console.log('�?Import Output:', stdout);
         if (stderr) console.error('⚠️ Import Stderr:', stderr);
 
         // Check for success marker or exit code (execAsync throws on non-zero exit)
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         });
 
     } catch (error: any) {
-        console.error('❌ Import Failed:', error);
+        console.error('�?Import Failed:', error);
         return NextResponse.json({
             error: 'Import failed',
             details: error.message,
@@ -47,3 +47,4 @@ export async function POST(req: Request) {
         }, { status: 500 });
     }
 }
+

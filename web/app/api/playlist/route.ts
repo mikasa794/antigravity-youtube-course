@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
         console.log(`Fetching playlist info for: ${url}`);
 
-        return new Promise((resolve) => {
+        return new Promise<Response>((resolve) => {
             // Run magic_import with --mode playlist
             const pythonProcess = spawn('python', [scriptPath, url, '--mode', 'playlist'], {
                 cwd: projectRoot,
@@ -52,3 +52,4 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+

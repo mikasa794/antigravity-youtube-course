@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
         const { word, meaning, context, videoTitle, videoUrl, timestamp } = body;
 
         if (!word || !videoUrl) {
-            console.error("‚ùå [API] Missing Fields:", { word, videoUrl });
+            console.error("‚ù?[API] Missing Fields:", { word, videoUrl });
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
@@ -32,3 +32,4 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
