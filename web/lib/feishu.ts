@@ -14,6 +14,59 @@ const LINGO_TABLE_ID = process.env.FEISHU_LINGO_TABLE_ID || '';
 /* Courses Table - Optional */
 const COURSES_TABLE_ID = process.env.FEISHU_COURSES_TABLE_ID || '';
 
+// --- Save Vocab ---
+export async function saveVocab(data: {
+    word: string;
+    meaning: string;
+    context: string;
+    videoTitle: string;
+    videoUrl: string;
+    timestamp: number;
+}): Promise<{ success: boolean; id?: string; error?: string }> {
+    if (!BITABLE_APP_TOKEN || !VOCAB_TABLE_ID) {
+        return { success: false, error: 'Missing Feishu Configuration' };
+    }
+
+    const token = await getTenantAccessToken();
+    if (!token) return { success: false, error: 'Failed to get Access Token' };
+
+    const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${BITABLE_APP_TOKEN}/tables/${VOCAB_TABLE_ID}/records`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json; charset=utf-8'
+            },
+            body: JSON.stringify({
+                fields: {
+                    'Word': data.word,
+                    'Meaning': data.meaning,
+                    'Context': data.context,
+                    'Video Title': data.videoTitle,
+                    'Video URL': { link: data.videoUrl, text: 'Watch' },
+                    'Timestamp': String(data.timestamp),
+                    'Date': new Date().getTime(), // Date field in Feishu often takes timestamp
+                    'Tags': ['LingoTube']
+                }
+            })
+        });
+
+        const resData = await response.json();
+        if (resData.code === 0) {
+            return { success: true, id: resData.data.record.record_id };
+        } else {
+            console.error('Feishu Save Error:', resData);
+            return { success: false, error: resData.msg || 'Feishu API Error' };
+        }
+
+    } catch (e) {
+        console.error('Save Vocab Network Error:', e);
+        return { success: false, error: 'Network Error' };
+    }
+}
+
 interface TenantAccessTokenResponse {
     code: number;
     msg: string;
