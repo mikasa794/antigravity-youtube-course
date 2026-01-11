@@ -181,7 +181,7 @@ interface TenantAccessTokenResponse {
     expire: number;
 }
 
-async function getTenantAccessToken(): Promise<string> {
+export async function getTenantAccessToken(): Promise<string> {
     if (!APP_ID || !APP_SECRET) {
         console.error('FEISHU_APP_ID or FEISHU_APP_SECRET is missing');
         return '';
