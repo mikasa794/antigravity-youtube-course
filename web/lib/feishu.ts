@@ -1,90 +1,54 @@
 
-const APP_ID = process.env.FEISHU_APP_ID || 'cli_a9c6a1bb56f89cd4';
-// Cache Buster: 1
-const APP_SECRET = process.env.FEISHU_APP_SECRET || 'Ox6v51RIbon1bbxaHmvUGhqRNnW3CiUs';
-const APP_TOKEN = process.env.FEISHU_APP_TOKEN || 'FCnWb734NawZW6spPVvcMjtonjf';
-const TABLE_ID = process.env.FEISHU_TABLE_ID || 'tblZh4KDjOUZnpod'; // Articles Table
-const COURSES_TABLE_ID = 'tbleFDCQBG74x5sp';
-const LESSONS_TABLE_ID = 'tbl04aHyg3FzM5sQ';
-const LINGO_TABLE_ID = 'tblTEYjEp8ZtDwZZ';
-const VOCAB_TABLE_ID = 'tblMYEUusOpQ9HIN'; // User Vocabulary V2 Table
+const APP_ID = process.env.FEISHU_APP_ID || '';
+const APP_SECRET = process.env.FEISHU_APP_SECRET || '';
 
-interface VocabPayload {
-    word: string;
-    meaning: string;
-    context: string;
-    videoTitle: string;
-    videoUrl: string;
-    timestamp: number;
+// Base ID (App Token)
+const BITABLE_APP_TOKEN = process.env.FEISHU_BITABLE_APP_TOKEN || ''; 
+
+// Table IDs
+const ARTICLES_TABLE_ID = process.env.FEISHU_BITABLE_TABLE_ID || '';
+/* Lingo Table */
+const VOCAB_TABLE_ID = process.env.FEISHU_VOCAB_TABLE_ID || '';
+/* Courses Table - Optional */
+const COURSES_TABLE_ID = process.env.FEISHU_COURSES_TABLE_ID || '';
+
+interface TenantAccessTokenResponse {
+    code: number;
+    msg: string;
+    tenant_access_token: string;
+    expire: number;
 }
 
-export async function saveVocab(payload: VocabPayload) {
+async function getTenantAccessToken(): Promise<string> {
+    if (!APP_ID || !APP_SECRET) {
+        console.error('FEISHU_APP_ID or FEISHU_APP_SECRET is missing');
+        return '';
+    }
+
     try {
-        const token = await getTenantAccessToken();
-        const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${VOCAB_TABLE_ID}/records`;
-
-        const fields = {
-            "Word": payload.word,
-            "Meaning": payload.meaning,
-            "Context Sentence": payload.context,
-            "Video Title": payload.videoTitle,
-            "Video URL": { link: payload.videoUrl, text: "View Video" },
-            "Timestamp": payload.timestamp,
-            "Saved Date": Date.now(),
-            "Review Count": 0
-        };
-
-        const res = await fetch(url, {
+        const response = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json; charset=utf-8',
             },
-            body: JSON.stringify({ fields })
+            body: JSON.stringify({
+                app_id: APP_ID,
+                app_secret: APP_SECRET,
+            }),
+            cache: 'no-store',
         });
 
-        const data = await res.json();
-        if (data.code === 0) {
-            return { success: true, id: data.data.record.record_id };
-        } else {
-            console.error('Feishu Save Error:', data);
-            return { success: false, error: data.msg };
+        const data: TenantAccessTokenResponse = await response.json();
+        
+        if (data.code !== 0) {
+            console.error('Failed to get tenant access token:', data);
+            return '';
         }
-    } catch (e) {
-        console.error('Save Vocab Exception:', e);
-        return { success: false, error: 'Internal Error' };
-    }
-}
 
-export async function getVocabList() {
-
-    try {
-        const token = await getTenantAccessToken();
-        // Sort by Saved Date DESC
-        const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${VOCAB_TABLE_ID}/records?sort=["Saved Date DESC"]&page_size=100`;
-
-        const res = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        const data = await res.json();
-        if (data.code === 0) {
-            return {
-                success: true,
-                items: data.data.items.map((item: any) => ({
-                    id: item.record_id,
-                    word: item.fields["Word"],
-                    meaning: item.fields["Meaning"],
-                    context: item.fields["Context Sentence"],
-                    videoTitle: item.fields["Video Title"],
-                    videoUrl: item.fields["Video URL"]?.link,
-                    timestamp: item.fields["Timestamp"]
-                }))
-            };
-        }
-        return { success: false, error: data.msg };
-    } catch (e) {
-        return { success: false, error: 'Fetch Exception' };
+        return data.tenant_access_token;
+    } catch (error) {
+        console.error('Error fetching tenant access token:', error);
+        return '';
     }
 }
 
@@ -92,269 +56,127 @@ export interface Article {
     id: string;
     title: string;
     summary: string;
-    cover?: string;
-    date: string;
-    author: string;
-    tags: string[];
-    goldenQuote: string;
+    platform: string;
     url: string;
-}
-
-export interface Course {
-    id: string;
-    title: string;
-    description: string;
-    cover?: string;
-    status: 'Generating' | 'Done';
-}
-
-export interface Lesson {
-    id: string;
-    title: string;
-    moduleTitle: string;
-    videoUrl: string;
-    duration: string;
-    courseId: string;
-    transcript?: string;
-}
-
-export interface LingoClip {
-    id: string;
-    title: string;
-    series: string;
-    targetLang: string;
-    videoUrl: string;
-    transcript: string;
-    difficulty: string;
+    coverUrl?: string; 
+    tags: string[];
+    date: string;
     aiNotes?: string;
     status: string;
-    cover?: string;
-}
-
-export async function getTenantAccessToken() {
-    const res = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            app_id: APP_ID,
-            app_secret: APP_SECRET,
-        }),
-        cache: 'no-store',
-    });
-
-    const data = await res.json();
-    if (data.code !== 0) {
-        throw new Error(`Failed to get access token: ${data.msg}`);
-    }
-    return data.tenant_access_token;
 }
 
 export async function fetchArticles(): Promise<Article[]> {
+    if (!BITABLE_APP_TOKEN || !ARTICLES_TABLE_ID) {
+        console.warn('FEISHU_BITABLE_APP_TOKEN or FEISHU_BITABLE_TABLE_ID is missing');
+        return [];
+    }
+
+    const token = await getTenantAccessToken();
+    if (!token) return [];
+
+    const url = https://open.feishu.cn/open-apis/bitable/v1/apps//tables//records;
+
     try {
-        const token = await getTenantAccessToken();
-
-        // Construct query parameters
-        const params = new URLSearchParams({
-            filter: 'CurrentValue.[Status]="Done"',
-            sort: '["Date DESC"]',
-        });
-
-        const res = await fetch(`https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${TABLE_ID}/records?${params}`, {
+        const response = await fetch(url, {
             headers: {
-                'Authorization': `Bearer ${token}`,
+                'Authorization': Bearer ,
             },
-            next: { revalidate: 60 }, // Cache for 1 minute
+            next: { revalidate: 60 } 
         });
 
-        const data = await res.json();
+        const data = await response.json();
+
         if (data.code !== 0) {
-            console.error('Feishu API Error:', data);
+            console.error('Failed to fetch articles from Feishu:', data);
             return [];
         }
 
-        if (!data.data?.items) return [];
+        if (!data.data || !data.data.items) {
+           return [];
+        }
 
-        return data.data.items.map((item: any) => {
-            const f = item.fields;
-            return {
-                id: item.record_id,
-                title: f['Title'] || 'Untitled',
-                summary: f['Summary'] || '',
-                // Handle attachment array for cover
-                cover: f['Cover'] && f['Cover'][0] ? f['Cover'][0].url : undefined,
-                date: f['Date'] ? new Date(f['Date']).toISOString().split('T')[0] : '',
-                author: f['Author'] || '',
-                tags: f['Tags'] || [],
-                goldenQuote: f['Golden Quote'] || '',
-                // Handle link object for URL
-                url: f['URL'] ? f['URL'].link : '',
-            };
+        const items = data.data.items.map((item: any) => {
+           const f = item.fields;
+           
+           const getCoverParams = (attachmentField: any) => {
+               if (attachmentField && Array.isArray(attachmentField) && attachmentField.length > 0) {
+                   return attachmentField[0].url; 
+               }
+               return undefined;
+           };
+
+           return {
+            id: item.record_id,
+            title: f['Title'] || 'Untitled', 
+            summary: f['Summary'] || '',
+            platform: f['Platform'] || 'Unknown',
+            url: f['URL'] && f['URL'].link ? f['URL'].link : (f['URL'] || '#'),
+            coverUrl: getCoverParams(f['Cover']),
+            tags: f['Tags'] ? (Array.isArray(f['Tags']) ? f['Tags'] : [f['Tags']]) : [],
+            date: f['Date'] ? new Date(f['Date']).toISOString() : new Date().toISOString(),
+            aiNotes: f['AI Notes'] || '',
+            status: f['Status'] || 'Done',
+           };
         });
+
+        return items;
+
     } catch (error) {
         console.error('Error fetching articles:', error);
         return [];
     }
 }
 
-export async function fetchArticleById(id: string): Promise<Article | null> {
-    const articles = await fetchArticles();
-    return articles.find(a => a.id === id) || null;
+export interface VocabCard {
+  id: string;
+  word: string;
+  context: string;
+  translation: string;
+  videoTitle?: string;
+  timestamp?: string;
 }
 
-export async function fetchCourses(): Promise<Course[]> {
-    try {
-        const token = await getTenantAccessToken();
-        const res = await fetch(`https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${COURSES_TABLE_ID}/records`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-            next: { revalidate: 10 }, // Short cache for status updates
-        });
-
-        const data = await res.json();
-        if (data.code !== 0) {
-            console.error('Feishu API Error (Courses):', data);
-            return [];
-        }
-
-        if (!data.data?.items) return [];
-
-        return data.data.items.map((item: any) => {
-            const f = item.fields;
-            return {
-                id: item.record_id,
-                title: f['Title'] || 'Untitled Course',
-                description: f['Description'] || '',
-                // Check Attachment 'Cover' first, then Text 'Cover Image URL'
-                cover: (f['Cover'] && f['Cover'][0] ? f['Cover'][0].url : undefined) || f['Cover Image URL'],
-                status: f['Status'] || 'Generating',
-            };
-        });
-
-    } catch (error) {
-        console.error('Error fetching courses:', error);
+export async function fetchVocabCards(): Promise<VocabCard[]> {
+     if (!BITABLE_APP_TOKEN || !VOCAB_TABLE_ID) {
+        console.warn('FEISHU_BITABLE_APP_TOKEN or FEISHU_VOCAB_TABLE_ID is missing');
         return [];
     }
-}
 
-export async function fetchLessons(courseId: string): Promise<Lesson[]> {
+    const token = await getTenantAccessToken();
+    if (!token) return [];
+
+    const url = https://open.feishu.cn/open-apis/bitable/v1/apps//tables//records;
+
     try {
-        const token = await getTenantAccessToken();
-        // Filter by Course ID
-        const params = new URLSearchParams({
-            filter: `CurrentValue.[Course ID]="${courseId}"`,
-            // Optional: Sort by Sort Order if we had it populated
-        });
-
-        const res = await fetch(`https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${LESSONS_TABLE_ID}/records?${params}`, {
+        const response = await fetch(url, {
             headers: {
-                'Authorization': `Bearer ${token}`,
+                'Authorization': Bearer ,
             },
-            next: { revalidate: 60 },
+             next: { revalidate: 60 }
         });
 
-        const data = await res.json();
+        const data = await response.json();
+
         if (data.code !== 0) {
-            console.error('Feishu API Error (Lessons):', data);
-            return [];
+             console.error('Failed to fetch vocab cards:', data);
+             return [];
         }
 
-        if (!data.data?.items) return [];
-
-        return data.data.items.map((item: any) => {
-            const f = item.fields;
-            return {
-                id: item.record_id,
-                title: f['Title'] || 'Untitled Lesson',
-                moduleTitle: f['Module Title'] || '',
-                videoUrl: f['Video URL'] ? f['Video URL'].link : '',
-                duration: f['Duration'] || '',
-                courseId: f['Course ID'] || '',
-                transcript: f['Transcript'] || '',
-            };
-        });
-
-    } catch (error) {
-        console.error('Error fetching lessons:', error);
-        return [];
-    }
-}
-
-export async function fetchLingoClips(series?: string): Promise<LingoClip[]> {
-    try {
-        const token = await getTenantAccessToken();
-        let params = new URLSearchParams();
-        if (series) {
-            params.append('filter', `CurrentValue.[Series]="${series}"`);
+         if (!data.data || !data.data.items) {
+           return [];
         }
 
-        const res = await fetch(`https://open.feishu.cn/open-apis/bitable/v1/apps/${APP_TOKEN}/tables/${LINGO_TABLE_ID}/records?${params}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-            next: { revalidate: 10 },
-        });
-
-        const data = await res.json();
-        if (data.code !== 0) return [];
-        if (!data.data?.items) return [];
-
-        // Helper to fetch JSON from attachment URL
-        const fetchTranscriptJson = async (url: string) => {
-            try {
-                // Try with Auth first (Standard for Bitable API)
-                let res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-
-                // If 403/400, try without (CDN signed link might reject Auth header)
-                if (!res.ok) {
-                    console.warn(`Fetch with auth failed (${res.status}), retrying without headers...`);
-                    res = await fetch(url);
-                }
-
-                if (res.ok) {
-                    const text = await res.text();
-                    return text;
-                } else {
-                    console.error(`Failed to fetch transcript file: ${res.status} ${res.statusText}`);
-                }
-            } catch (e) { console.error("Failed to fetch transcript json exception", e); }
-            return '';
-        };
-
-        const items = await Promise.all(data.data.items.map(async (item: any) => {
-            const f = item.fields;
-            let transcriptJson = f['Transcript'] || '';
-
-            // Check for JSON file in 'Transcript File' attachment (Prioritized)
-            // Fallback to 'Cover' if needed (for legacy), but 'Transcript File' is the new standard.
-            let attachmentField = f['Transcript File'];
-            if (!attachmentField && f['Cover']) attachmentField = f['Cover']; // Fallback
-
-            if (attachmentField && Array.isArray(attachmentField)) {
-                const jsonFile = attachmentField.find((a: any) => a.name.endsWith('.json'));
-                if (jsonFile && jsonFile.url) {
-                    const fetched = await fetchTranscriptJson(jsonFile.url);
-                    if (fetched) transcriptJson = fetched;
-                }
-            }
-
-            return {
-                id: item.record_id,
-                title: f['Title'] || 'Untitled',
-                series: f['Series'] || '',
-                targetLang: f['Target Language'] || 'English',
-                cover: f['Cover Image URL'] || (f['Cover Image'] && f['Cover Image'][0] ? f['Cover Image'][0].url : undefined) || (f['Cover'] && f['Cover'][0] ? f['Cover'][0].url : undefined),
-                videoUrl: f['Video URL'] ? f['Video URL'].link : '',
-                transcript: transcriptJson,
-                difficulty: f['Difficulty'] || 'Intermediate',
-                aiNotes: f['AI Notes'] || '',
-                status: f['Status'] || 'Done',
-            };
+        return data.data.items.map((item: any) => ({
+            id: item.record_id,
+            word: item.fields['Word'] || 'Unknown',
+            context: item.fields['Context'] || '',
+            translation: item.fields['Translation'] || '',
+            videoTitle: item.fields['Video Title'] || '',
+             timestamp: item.fields['Timestamp'] || '',
         }));
 
-        return items;
     } catch (error) {
-        console.error('Error fetching lingo clips:', error);
+        console.error('Error fetching vocab cards:', error);
         return [];
     }
 }
