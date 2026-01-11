@@ -22,13 +22,13 @@ export async function POST(req: Request) {
         // We use double quotes for URL to prevent shell injection issues, though basic.
         const command = `python "${scriptPath}" "${url}"`;
 
-        console.log('🚀 Executing Magic Import:', command);
+        console.log('馃殌 Executing Magic Import:', command);
 
         // Execute
         const { stdout, stderr } = await execAsync(command);
 
-        console.log('�?Import Output:', stdout);
-        if (stderr) console.error('⚠️ Import Stderr:', stderr);
+        console.log('鉁?Import Output:', stdout);
+        if (stderr) console.error('鈿狅笍 Import Stderr:', stderr);
 
         // Check for success marker or exit code (execAsync throws on non-zero exit)
 
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         });
 
     } catch (error: any) {
-        console.error('�?Import Failed:', error);
+        console.error('鉂?Import Failed:', error);
         return NextResponse.json({
             error: 'Import failed',
             details: error.message,

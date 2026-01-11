@@ -5,11 +5,11 @@ import { saveVocab } from '@/lib/feishu';
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        console.log("📝 [API] Vocab Save Payload:", JSON.stringify(body, null, 2)); // Debug Log
+        console.log("馃摑 [API] Vocab Save Payload:", JSON.stringify(body, null, 2)); // Debug Log
         const { word, meaning, context, videoTitle, videoUrl, timestamp } = body;
 
         if (!word || !videoUrl) {
-            console.error("�?[API] Missing Fields:", { word, videoUrl });
+            console.error("鉂?[API] Missing Fields:", { word, videoUrl });
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 

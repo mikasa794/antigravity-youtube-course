@@ -8,7 +8,7 @@ const VOCAB_TABLE_ID = 'tblx7DodiHH6jkVR'; // HARDCODED V3 TABLE (TEXT FIELDS)
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        console.log("📝 [API V3] Save Payload:", JSON.stringify(body, null, 2));
+        console.log("馃摑 [API V3] Save Payload:", JSON.stringify(body, null, 2));
 
         const { word, meaning, context, videoTitle, videoUrl, timestamp } = body;
 
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
             "Review Count": "0"                  // TEXT FIELD
         };
 
-        console.log("📤 [API V2] Sending Fields:", JSON.stringify(fields, null, 2));
+        console.log("馃摛 [API V2] Sending Fields:", JSON.stringify(fields, null, 2));
 
         const res = await fetch(url, {
             method: 'POST',
@@ -46,12 +46,12 @@ export async function POST(req: NextRequest) {
         if (data.code === 0) {
             return NextResponse.json({ success: true, id: data.data.record.record_id });
         } else {
-            console.error('�?[API V2] Feishu Error:', data);
+            console.error('鉂?[API V2] Feishu Error:', data);
             return NextResponse.json({ error: `Feishu Error: ${data.msg}` }, { status: 500 });
         }
 
     } catch (e: any) {
-        console.error('�?[API V2] Exception:', e);
+        console.error('鉂?[API V2] Exception:', e);
         return NextResponse.json({ error: e.message || 'Internal Server Error' }, { status: 500 });
     }
 }
