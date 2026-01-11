@@ -21,7 +21,7 @@ export async function POST(req: Request) {
         // On Vercel, this won't work easily because Python isn't there by default unless configured.
         // But since user is running LOCALLY, this works fine.
 
-        return new Promise((resolve, reject) => {
+        return new Promise<Response>((resolve, reject) => {
             const pythonProcess = spawn('python', [scriptPath, topic]);
 
             let output = '';
@@ -55,3 +55,4 @@ export async function POST(req: Request) {
         );
     }
 }
+
