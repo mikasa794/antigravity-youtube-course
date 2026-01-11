@@ -49,15 +49,7 @@ export default function RootLayout({
             </div>
 
             {/* Scrollbar Hide Style */}
-            <style jsx global>{`
-              .scrollbar-hide::-webkit-scrollbar {
-                  display: none;
-              }
-              .scrollbar-hide {
-                  -ms-overflow-style: none;
-                  scrollbar-width: none;
-              }
-            `}</style>
+            
           </div>
         </div>
 
@@ -68,3 +60,4 @@ export default function RootLayout({
     </html>
   );
 }
+
