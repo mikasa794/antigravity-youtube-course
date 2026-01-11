@@ -220,7 +220,9 @@ export interface Article {
     summary: string;
     platform: string;
     url: string;
-    coverUrl?: string;
+    cover?: string;
+    author?: string;
+    goldenQuote?: string;
     tags: string[];
     date: string;
     aiNotes?: string;
@@ -273,7 +275,9 @@ export async function fetchArticles(): Promise<Article[]> {
                 summary: f['Summary'] || '',
                 platform: f['Platform'] || 'Unknown',
                 url: f['URL'] && f['URL'].link ? f['URL'].link : (f['URL'] || '#'),
-                coverUrl: getCoverParams(f['Cover']),
+                cover: getCoverParams(f['Cover']),
+                author: f['Author'] || 'Antigravity AI',
+                goldenQuote: f['Quote'] || f['Golden Quote'] || '',
                 tags: f['Tags'] ? (Array.isArray(f['Tags']) ? f['Tags'] : [f['Tags']]) : [],
                 date: f['Date'] ? new Date(f['Date']).toISOString() : new Date().toISOString(),
                 aiNotes: f['AI Notes'] || '',
