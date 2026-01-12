@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, BookOpen, Quote, Sparkles, Repeat, SkipBack, SkipForward, Play, Pause, Heart } from 'lucide-react';
+import { ChevronLeft, BookOpen, Quote, Sparkles, Repeat, SkipBack, SkipForward, Play, Pause, Heart, Mic } from 'lucide-react';
 import { LingoClip } from '@/lib/feishu';
+import { RoleplayInterface } from '@/components/RoleplayInterface';
 
 // Helper to get ID
 import YouTube from 'react-youtube';
@@ -31,6 +32,9 @@ export default function LingoPlayerClient({ clip }: { clip: LingoClip }) {
     const activeItemRef = useRef<HTMLDivElement>(null);
 
     const [isHoveringList, setIsHoveringList] = useState(false);
+
+    // Roleplay Modal State
+    const [isRoleplayOpen, setIsRoleplayOpen] = useState(false);
 
     // Auto-Scroll to active item (Only if not hovering)
     useEffect(() => {
@@ -410,6 +414,16 @@ export default function LingoPlayerClient({ clip }: { clip: LingoClip }) {
                                 <Repeat className={`w-4 h-4 ${isLooping ? 'animate-spin-slow' : ''}`} />
                                 <span className="text-sm font-medium hidden md:inline">{isLooping ? 'Looping' : 'Loop'}</span>
                             </button>
+
+                            {/* Roleplay Trigger */}
+                            <button
+                                onClick={() => setIsRoleplayOpen(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 text-purple-300 hover:text-white hover:border-purple-400 transition-all"
+                                title="Challenge Mode: Talk to AI"
+                            >
+                                <Mic className="w-4 h-4" />
+                                <span className="text-sm font-medium hidden md:inline">Challenge</span>
+                            </button>
                         </div>
                     </div>
 
@@ -623,6 +637,15 @@ export default function LingoPlayerClient({ clip }: { clip: LingoClip }) {
                     </div>
                 </div>
             </div>
+
+            {/* AI ROLEPLAY OVERLAY */}
+            {isRoleplayOpen && (
+                <RoleplayInterface
+                    persona={clip.title.toLowerCase().includes('conan') ? 'Conan' : 'Joey'}
+                    context={activeContext?.summary || clip.title || "General Chat"}
+                    onClose={() => setIsRoleplayOpen(false)}
+                />
+            )}
         </div >
     );
 }
