@@ -264,8 +264,12 @@ export interface Article {
 export async function fetchArticles(): Promise<Article[]> {
     // 1. Static Fallback
     if (staticData && staticData.articles) {
-        return (staticData.articles as any[]).map((item: any) => {
+        const sorted = (staticData.articles as any[]).map((item: any) => {
             const f = item.fields;
+            // FILTER: If Tags contain "Friends", skip it (it belongs in Lingo)
+            const tags = f['Tags'] ? (Array.isArray(f['Tags']) ? f['Tags'] : [f['Tags']]) : [];
+            if (tags.includes('Friends')) return null;
+
             const getCoverParams = (attachmentField: any) => {
                 if (attachmentField && Array.isArray(attachmentField) && attachmentField.length > 0) {
                     return attachmentField[0].url;
@@ -282,12 +286,17 @@ export async function fetchArticles(): Promise<Article[]> {
                 cover: getCoverParams(f['Cover']),
                 author: f['Author'] || 'Antigravity AI',
                 goldenQuote: f['Quote'] || f['Golden Quote'] || '',
-                tags: f['Tags'] ? (Array.isArray(f['Tags']) ? f['Tags'] : [f['Tags']]) : [],
+                tags: tags,
                 date: f['Date'] ? new Date(f['Date']).toISOString() : new Date().toISOString(),
                 aiNotes: f['AI Notes'] || '',
                 status: f['Status'] || 'Done',
             };
-        });
+        }).filter(Boolean) as Article[];
+
+        // Sort by Date Descending
+        sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        return sorted;
     }
 
     if (!BITABLE_APP_TOKEN || !ARTICLES_TABLE_ID) {
