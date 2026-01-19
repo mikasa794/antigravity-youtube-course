@@ -42,7 +42,11 @@ export default function ArticleCard({ article }: { article: Article }) {
             {/* Cover Image */}
             <div className="relative aspect-video overflow-hidden bg-gray-50">
                 <img
-                    src={article.cover ? `/api/image-proxy?url=${encodeURIComponent(article.cover)}` : getFallbackImage(article.id)}
+                    src={
+                        article.cover
+                            ? (article.cover.startsWith('/') ? article.cover : `/api/image-proxy?url=${encodeURIComponent(article.cover)}`)
+                            : getFallbackImage(article.id)
+                    }
                     alt={article.title}
                     className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700 ease-out"
                     loading="lazy"
