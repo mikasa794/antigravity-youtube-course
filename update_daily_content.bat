@@ -21,8 +21,9 @@ echo [4/4] Deploying to Vercel (via Git)...
 git add .
 git commit -m "chore: daily content update (via One-Click)"
 
-:: 2. Pull Remote Changes (Rebase to keep history clean)
-git pull --rebase origin main
+:: 2. Pull Remote Changes (Merge strategy: Keep Local "Ours" for conflicts)
+:: This ensures our fresh static_db.json overwrites the old one from the cloud.
+git pull origin main --no-rebase -X ours
 
 :: 3. Push to Vercel
 git push origin main
