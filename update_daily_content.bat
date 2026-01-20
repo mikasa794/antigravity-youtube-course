@@ -17,6 +17,9 @@ python src/sync_feishu_to_static.py
 
 echo.
 echo [4/4] Deploying to Vercel (via Git)...
+:: PULL FIRST to resolve any remote changes (Fixes "rejected" error)
+git pull --rebase origin main
+
 :: Add ALL changes (including new scripts and config updates)
 git add .
 :: Only commit if there are changes
