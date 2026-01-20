@@ -11,6 +11,7 @@ class YouTubeFetcher:
             'quiet': True,
             'extract_flat': True, # Don't download yet, just get info
             'force_generic_extractor': False,
+            'cookiefile': 'cookies.txt', # Use the exported cookies file for auth
         }
 
     def get_playlist_info(self, url):
