@@ -17,20 +17,16 @@ python src/sync_feishu_to_static.py
 
 echo.
 echo [4/4] Deploying to Vercel (via Git)...
-:: PULL FIRST to resolve any remote changes (Fixes "rejected" error)
+:: 1. Add and Commit Local Changes (Safe)
+git add .
+git commit -m "chore: daily content update (via One-Click)"
+
+:: 2. Pull Remote Changes (Rebase to keep history clean)
 git pull --rebase origin main
 
-:: Add ALL changes (including new scripts and config updates)
-git add .
-:: Only commit if there are changes
-git diff --cached --quiet
-if %errorlevel% neq 0 (
-    git commit -m "chore: daily content update (via One-Click)"
-    git push origin main
-    echo ✅ Changes pushed to Vercel!
-) else (
-    echo 💤 No new content found. Website is already up to date.
-)
+:: 3. Push to Vercel
+git push origin main
+echo ✅ Changes pushed to Vercel!
 
 echo.
 echo ==================================================
