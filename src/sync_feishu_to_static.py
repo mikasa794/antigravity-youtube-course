@@ -2,9 +2,7 @@
 import json
 import os
 import sys
-from web.lib.feishu_sync_script import fetch_all_articles # Assuming I can import the logic or just rewrite simple fetch here
-
-# Use requests directly to avoid complex imports if possible, or reuse existing classes
+# Use requests directly to avoid complex imports
 import requests
 
 # Load Env
