@@ -5,9 +5,13 @@ import sys
 # Use requests directly to avoid complex imports
 import requests
 
-# Load Env
+# Load Env explicitly
 from dotenv import load_dotenv
-load_dotenv()
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+load_dotenv(env_path)
+
+print(f"Debug: Loaded Env from {env_path}")
+print(f"Debug: APP_ID prefix: {os.getenv('FEISHU_APP_ID')[:5] if os.getenv('FEISHU_APP_ID') else 'None'}")
 
 APP_ID = os.getenv('FEISHU_APP_ID')
 APP_SECRET = os.getenv('FEISHU_APP_SECRET')
@@ -64,6 +68,10 @@ def main():
     # Our usage in feishu.ts expects:
     # item.fields['Title'], item.fields['Date'] (timestamp usually), etc.
     
+    if not records:
+        print("⚠️ Warning: No records fetched (or failed to authenticate). Skipping overwrite to protect static_db.json.")
+        return
+
     # We need to ensure local images support if any? 
     # For now, just dump the raw Feishu response structure which IS what static_db uses.
     
